@@ -1,8 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using InControl;
+using UnityEngine;
 
 // TODO: find a way to find out who won before Vicotory runs.
 
@@ -13,6 +16,11 @@ namespace MoreVictoryText {
 
         // Keeps track if the player who just won.
         public static int playerWonID = 0;
+
+        // All win texts that belong to all players.
+        public static List<string> generalWinText = new List<string>();
+        // All win texts that belong to only one player
+        public static Dictionary<int, List<string>> specificWinText = [];
 
         private void Awake() {
             // Make our logger work.
@@ -27,11 +35,35 @@ namespace MoreVictoryText {
 
             //File.ReadLines()
 
+            // Read all of the win texts and store them in memory.
+            generalWinText = LoadFromFileWinTexts("general.txt");
+            specificWinText.Add(0, LoadFromFileWinTexts("yellow.txt"));
+            specificWinText.Add(1, LoadFromFileWinTexts("blue.txt"));
+            specificWinText.Add(2, LoadFromFileWinTexts("red.txt"));
+            specificWinText.Add(3, LoadFromFileWinTexts("green.txt"));
+
+        }
+
+        public static List<string> LoadFromFileWinTexts(string filename) {
+            string filepath = "BepInEx/plugins/MoreWinText/texts/" + filename;
+            if (!File.Exists(filepath)) {
+                logger.LogError("Requested wintext file doesn't exist! Check " + filepath);
+            }
+
+            List<string> winTexts = [];
+            foreach(string text in File.ReadAllLines("BepInEx/plugins/MoreWinText/texts/" + filename)) {
+                winTexts.Add(text);
+            }
+            return winTexts;
         }
 
         // Gets the number of vanilla text
-        public static int getVanillaTextCount() {
+        public static int GetVanillaTextCount() {
             return Traverse.Create(GameManager.Instance).Field("vicotory").Field("standard").GetValue<string[]>().Length;
+        }
+
+        public static int GetTotalCustomTextCount(int id) {
+            return generalWinText.Count + specificWinText[id].Count;
         }
     }
 
@@ -41,9 +73,39 @@ namespace MoreVictoryText {
     [HarmonyPatch(typeof(Vicotory), nameof(Vicotory.GetRandomWinText))]
     public class VicotoryPatch {
         static bool Prefix(out string __result) {
-            __result = "waluigi #" + WinTextPlugin.playerWonID;;
 
-            return false;
+            int totalCustom = WinTextPlugin.GetTotalCustomTextCount(WinTextPlugin.playerWonID);
+
+            int total = totalCustom + WinTextPlugin.GetVanillaTextCount();
+
+            // Check if we should generate a custom one.
+            float customToTotalRatio = (float) totalCustom / (float) total;
+
+            if (customToTotalRatio + 0.1f > UnityEngine.Random.Range(0.0f, 1.0f)) {
+                // Time to use our custom ones!
+
+                // We'll use the same trick to decide if we should use the generalist ones or the special ones.
+                int totalCustomSpecialized = WinTextPlugin.specificWinText[WinTextPlugin.playerWonID].Count;
+                float specializedToTotalCustomRatio = (float) totalCustomSpecialized / (float) totalCustom;
+
+                if (specializedToTotalCustomRatio > UnityEngine.Random.Range(0.0f, 1.0f)) {
+                    // Let's use one of our specialized WinTexts
+                    int winTextIndex = UnityEngine.Random.RandomRangeInt(0, totalCustomSpecialized - 1);
+                    __result = WinTextPlugin.specificWinText[WinTextPlugin.playerWonID][winTextIndex];
+
+                } else {
+                    // Use a generic one.
+                    int winTextIndex = UnityEngine.Random.RandomRangeInt(0, WinTextPlugin.generalWinText.Count - 1);
+                    __result = WinTextPlugin.generalWinText[winTextIndex];
+                }
+
+                return false;
+            }
+
+
+
+            __result = "This shouldn't change anything. I hope";
+            return true;
         }
     }
 
