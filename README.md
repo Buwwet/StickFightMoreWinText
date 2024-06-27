@@ -44,6 +44,7 @@ Finally, if you run the game, it should hopefully get patched by BepInEx and cre
 Now that you have BepInEx working, drag the mod's folder to `StickFightTheGame/BepInEx/plugins/` and you're set!
 
 The directory structure should look something like this:
+```
 BepInEx/
 ├── cache
 │   └── ...
@@ -63,6 +64,7 @@ BepInEx/
     │       ├── green.txt
     │       ├── red.txt
     │       └── yellow.txt
+```
 
 Run the game and kill your friends to see if it worked. By default the mod disables vanilla win texts so that you can prove that it got installed correctly. You should revert that in the config.
 
