@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using InControl;
@@ -22,6 +24,8 @@ namespace MoreVictoryText {
         // All win texts that belong to only one player
         public static Dictionary<int, List<string>> specificWinText = [];
 
+        public static ConfigEntry<bool> configOverrideVanillaWinTexts;
+
         private void Awake() {
             // Make our logger work.
             BepInEx.Logging.Logger.Sources.Add(logger);
@@ -29,11 +33,15 @@ namespace MoreVictoryText {
             var harmony = new Harmony("com.buwwet.stickfight.wintextplugin");
             harmony.PatchAll();
 
-            // TODO: load em here.
-
+            //TODO: log correctly
             logger.LogInfo("Blah Blah loaded N number of wintexts!");
+            
+            var configFile = new ConfigFile("BepInEx/plugins/MoreWinText/config.cfg", true);
 
-            //File.ReadLines()
+            configOverrideVanillaWinTexts = configFile.Bind("General",
+                "OvverrideVanillaWinTexts", true, "Set to true if you want to disable vanilla texts from appearing"
+            );
+
 
             // Read all of the win texts and store them in memory.
             generalWinText = LoadFromFileWinTexts("general.txt");
@@ -81,7 +89,12 @@ namespace MoreVictoryText {
             // Check if we should generate a custom one.
             float customToTotalRatio = (float) totalCustom / (float) total;
 
-            if (customToTotalRatio + 0.1f > UnityEngine.Random.Range(0.0f, 1.0f)) {
+            float customOverride = 0.0f;
+            if (WinTextPlugin.configOverrideVanillaWinTexts.Value) {
+                customOverride = 1.0f;
+            }
+
+            if (customToTotalRatio + customOverride > UnityEngine.Random.Range(0.0f, 1.0f)) {
                 // Time to use our custom ones!
 
                 // We'll use the same trick to decide if we should use the generalist ones or the special ones.
