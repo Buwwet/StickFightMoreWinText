@@ -1,5 +1,5 @@
 # Customizable Victory Texts
-A mod for Stick Fight The Game using Bepinex LINK that allows for adding new win texts and even completely disabling the built-in ones.
+A mod for Stick Fight The Game using [BepInEx](https://github.com/BepInEx/BepInEx) that allows for adding new win texts and even completely disabling the built-in ones.
 It also boasts the ability to add player specific win texts.
 
 Thanks to not being a core-mod, this mod is compatible with other mods.
